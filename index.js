@@ -21,8 +21,13 @@ async function run(){
     try{
         await client.connect();
         // console.log('connected to database');
-        const database = client.db('tourXwebsite');
+        const database = client.db('nicheProductWebsite');
         const productsCollection = database.collection('products');
+
+        const database1 = client.db('nicheProductWebsite');
+        const reviewsCollection = database1.collection('reviews');
+
+        const usersCollection = database.collection('users');
 
         // GET API
         app.get('/products', async(req, res) => {
@@ -31,16 +36,37 @@ async function run(){
             res.send(products);
         });
 
-        //Get Single Service
+        app.get('/reviews', async(req, res) => {
+            const cursor1 = reviewsCollection.find({});
+            const reviews = await cursor1.toArray();
+            
+            console.log('hit the posrt api')
+            res.send(reviews);
+        });
+
+
+
+    //Get Single Service
         app.get('/products/:id', async(req, res) => {
             const id = req.params.id;
-            console.log('getting specific service', id);
+            console.log('getting specific product', id);
             const query = {_id: ObjectId(id) };
             const product = await productsCollection.findOne(query);
             res.json(product);
         })
 
+        app.get('/reviews/:id', async(req, res) => {
+            const id = req.params.id;
+            console.log('getting specific review', id);
+            const query = {_id: ObjectId(id) };
+            const review = await reviewsCollection.findOne(query);
+            res.json(review);
+        });
+
+
+
         //POST API
+//POST PRODUCTS API
         app.post('/products', async(req, res) => {
             const product = req.body;
             console.log('hit api', product);
@@ -49,6 +75,57 @@ async function run(){
             console.log(result);
             res.json(result);
         });
+// POST REVIEWS API
+        app.post('/reviews', async(req, res) => {
+            const review = req.body;
+            console.log('hit api', review);
+           
+            const result  = await reviewsCollection.insertOne(review);
+            console.log(result);
+            res.json(result);
+        });
+
+
+        
+//specification of admin
+app.get('/users/:email', async(req, res) => {
+    const email = req.params.email;
+    const query = {email: email};
+    const user = await usersCollection.findOne(query);
+    let isAdmin = false;
+    if (user.role === 'admin') {
+        isAdmin= true;
+    }
+    res.json({admin: isAdmin});
+});
+
+
+//POST USERS API
+        app.post('/users', async(req, res) => {
+             const user = req.body;
+             const result = await usersCollection.insertOne(user);
+             res.json(result);
+        })
+
+        app.put('/users', async (req, res) => {
+            const user = req.body;
+            const filter = {email: user.email};
+            const options = { upsert: true};
+            const updateDoc = {$set: user};
+            const result = await usersCollection.updateOne(filter, updateDoc, options);
+            res.json(result);
+        });
+
+        app.put('/users/admin', async(req, res) => {
+            const user = req.body;
+            console.log('put', user);
+            const filter = {email: user.email};
+            const updateDoc = {$set: {role: 'admin'}};
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.json(result);
+        });
+
+        
 
         //DELETE API
         app.delete('/products/:id', async(req, res) => {
