@@ -23,11 +23,9 @@ async function run(){
         // console.log('connected to database');
         const database = client.db('nicheProductWebsite');
         const productsCollection = database.collection('products');
-
-        const database1 = client.db('nicheProductWebsite');
-        const reviewsCollection = database1.collection('reviews');
-
+        const reviewsCollection = database.collection('reviews');
         const usersCollection = database.collection('users');
+        const ordersCollection = database.collection('orders');
 
         // GET API
         app.get('/products', async(req, res) => {
@@ -44,6 +42,33 @@ async function run(){
             res.send(reviews);
         });
 
+        // app.get('/orders', async(req, res) => {
+        //     const email = req.query.email;
+        //     const query = {email: email}
+        //     console.log(query);
+        //     const cursor1 = ordersCollection.find(query);
+        //     const orders = await cursor1.toArray();
+        //     res.json(orders);
+        // })
+
+        app.get('/orders', async(req, res) => {
+           
+            const cursor = ordersCollection.find({});
+            const orders = await cursor.toArray();
+            
+            res.json(orders);
+        })
+
+        app.get('/userOrders', async(req, res) => {
+            const email = req.query.email;
+                const query = {email: email}
+                console.log(query);
+                const cursor = ordersCollection.find(query);
+                const userOrders = await cursor.toArray();
+                res.json(userOrders);
+        })
+       
+
 
 
     //Get Single Service
@@ -57,10 +82,15 @@ async function run(){
 
         app.get('/reviews/:id', async(req, res) => {
             const id = req.params.id;
-            console.log('getting specific review', id);
             const query = {_id: ObjectId(id) };
             const review = await reviewsCollection.findOne(query);
             res.json(review);
+        });
+        app.get('/orders/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: ObjectId(id) };
+            const order = await ordersCollection.findOne(query);
+            res.json(order);
         });
 
 
@@ -107,6 +137,14 @@ app.get('/users/:email', async(req, res) => {
              res.json(result);
         })
 
+//POST ORDER API
+        app.post('/orders', async (req, res) => {
+            const order = req.body;
+            const result = await ordersCollection.insertOne(order);
+            console.log(result);
+            res.json(result)
+        })
+
         app.put('/users', async (req, res) => {
             const user = req.body;
             const filter = {email: user.email};
@@ -125,6 +163,15 @@ app.get('/users/:email', async(req, res) => {
             res.json(result);
         });
 
+        app.put('/orders/:id', async(req, res) =>{
+            const id = req.params.id;
+            // console.log('put', order);
+            const filter = {_id: ObjectId(id)};
+            const updateDoc = {$set: {status: 'shipped'}};
+            const result = await ordersCollection.updateOne(filter, updateDoc)
+            res.json(result);
+        })
+
         
 
         //DELETE API
@@ -132,6 +179,13 @@ app.get('/users/:email', async(req, res) => {
             const id = req.params.id;
             const query = {_id:ObjectId(id)};
             const result = await productsCollection.deleteOne(query);
+            res.json(result);
+        })
+
+        app.delete('/orders/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id:ObjectId(id)};
+            const result = await ordersCollection.deleteOne(query);
             res.json(result);
         })
 
